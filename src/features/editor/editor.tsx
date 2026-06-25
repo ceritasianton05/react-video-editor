@@ -69,11 +69,13 @@ const SceneContainer = ({
 
 const Sidebar = () => {
   return (
-    <div className="bg-card w-full flex flex-none border-r border-border/80 h-[calc(100vh-52px)]">
+    <div className="bg-card w-full flex flex-none border-r border-border/80 h-[calc(100vh-52px)] overflow-hidden">
       <div className="flex flex-col w-full">
         <MenuList />
         <Separator orientation="horizontal" />
-        <ControlItem />
+        <div className="flex-1 overflow-hidden">
+          <ControlItem />
+        </div>
       </div>
     </div>
   );

@@ -64,7 +64,7 @@ const useStore = create<ITimelineStore>((set) => ({
   setViewTimeline: (viewTimeline) => set({ viewTimeline }),
 
   timeline: null,
-  duration: 1000,
+  duration: 30000, // 30 seconds default
   fps: 30,
   scale: {
     // 1x distance (second 0 to second 5, 5 segments).
