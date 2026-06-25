@@ -8,16 +8,47 @@ import {
   Video as VideoIcon,
   Loader2,
   UploadIcon,
-  Upload
+  Upload,
+  FolderOpen
 } from "lucide-react";
 import { generateId } from "@designcombo/timeline";
 import { Button } from "@/components/ui/button";
 import useUploadStore from "../store/use-upload-store";
 import ModalUpload from "@/components/modal-upload";
+import { useEffect, useState } from "react";
+
+interface GalleryClip {
+  project_id: number;
+  project_title: string;
+  name: string;
+  duration: number;
+  url: string;
+  preview_url: string;
+}
 
 export const Uploads = () => {
   const { setShowUploadModal, uploads, pendingUploads, activeUploads } =
     useUploadStore();
+  const [galleryClips, setGalleryClips] = useState<GalleryClip[]>([]);
+  const [loadingGallery, setLoadingGallery] = useState(true);
+  const [galleryError, setGalleryError] = useState("");
+
+  // Fetch gallery clips from Flask
+  useEffect(() => {
+    fetch("/api/editor/my-clips")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load gallery");
+        return res.json();
+      })
+      .then((data) => {
+        setGalleryClips(data.clips || []);
+        setLoadingGallery(false);
+      })
+      .catch((err) => {
+        setGalleryError(err.message);
+        setLoadingGallery(false);
+      });
+  }, []);
 
   // Group completed uploads by type
   const videos = uploads.filter(
@@ -85,6 +116,24 @@ export const Uploads = () => {
     });
   };
 
+  const handleAddGalleryClip = (clip: GalleryClip) => {
+    dispatch(ADD_VIDEO, {
+      payload: {
+        id: generateId(),
+        details: {
+          src: clip.url
+        },
+        metadata: {
+          previewUrl: clip.preview_url
+        }
+      },
+      options: {
+        resourceId: "main",
+        scaleMode: "fit"
+      }
+    });
+  };
+
   const UploadPrompt = () => (
     <div className="flex items-center justify-center p-4">
       <Button
@@ -117,6 +166,60 @@ export const Uploads = () => {
           </span>
         </div>
       )}
+
+      {/* Gallery Section — clips from Flask */}
+      {loadingGallery ? (
+        <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Loading gallery...</span>
+        </div>
+      ) : galleryError ? (
+        <div className="px-4 py-2">
+          <div className="text-xs text-muted-foreground">
+            Gallery: {galleryError}
+          </div>
+        </div>
+      ) : galleryClips.length > 0 ? (
+        <div className="px-4 pb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <FolderOpen className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium text-sm">My Gallery</span>
+            <span className="text-xs text-muted-foreground">({galleryClips.length})</span>
+          </div>
+          <ScrollArea className="max-h-48">
+            <div className="grid grid-cols-3 gap-2">
+              {galleryClips.map((clip, idx) => (
+                <div
+                  key={`${clip.project_id}-${clip.name}-${idx}`}
+                  className="flex flex-col items-center gap-1 cursor-pointer group"
+                  onClick={() => handleAddGalleryClip(clip)}
+                >
+                  <Card className="w-full aspect-[9/16] max-h-24 flex items-center justify-center overflow-hidden relative bg-background hover:ring-1 hover:ring-primary/50 transition-all">
+                    <video
+                      src={clip.url}
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                      onMouseEnter={(e) => {
+                        const vid = e.currentTarget;
+                        vid.currentTime = 0.1;
+                      }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-all">
+                      <VideoIcon className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="absolute bottom-1 right-1 bg-black/80 text-[10px] text-white px-1 rounded">
+                      {Math.round(clip.duration)}s
+                    </div>
+                  </Card>
+                  <div className="text-[10px] text-muted-foreground truncate w-full text-center leading-tight">
+                    {clip.project_title}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      ) : null}
 
       {/* Uploads in Progress Section */}
       {(pendingUploads.length > 0 || activeUploads.length > 0) && (
