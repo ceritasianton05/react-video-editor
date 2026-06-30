@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { dispatch } from "@designcombo/events";
 import { HISTORY_UNDO, HISTORY_REDO, DESIGN_RESIZE } from "@designcombo/state";
 import { Icons } from "@/components/shared/icons";
@@ -30,10 +31,7 @@ import {
   useIsSmallScreen
 } from "@/hooks/use-media-query";
 
-import { LogoIcons } from "@/components/shared/logos";
-import Link from "next/link";
 import { ShortcutsModal } from "./shortcuts-modal";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export default function Navbar({
   user,
@@ -91,16 +89,6 @@ export default function Navbar({
       <DownloadProgressModal />
 
       <div className="flex items-center gap-2">
-        <a
-          href="/"
-          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5"/>
-            <path d="M12 19l-7-7 7-7"/>
-          </svg>
-        </a>
-
         <div className=" pointer-events-auto flex h-10 items-center px-1.5">
           <Button
             onClick={handleUndo}
@@ -141,26 +129,16 @@ export default function Navbar({
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            onClick={() => setIsShortcutsModalOpen(true)}
+            onClick={() => {
+              // Send postMessage BEFORE React renders, zero delay
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage({type: 'modalOverlay', open: true}, '*');
+              }
+              setIsShortcutsModalOpen(true);
+            }}
           >
             <Keyboard className="size-5" />
           </Button>
-          <Link href="https://discord.gg/Jmxsd5f2jp" target="_blank">
-            <Button className="h-8 rounded-lg" variant={"outline"}>
-              <LogoIcons.discord className="w-6 h-6" />
-              <span className="hidden md:block">Join Us</span>
-            </Button>
-          </Link>
-          <ModeToggle />
-
-          {/* <Button
-            className="flex h-8 gap-1 border border-border"
-            variant="outline"
-            size={isMediumScreen ? "sm" : "icon"}
-          >
-            <ShareIcon width={18} />{" "}
-            <span className="hidden md:block">Share</span>
-          </Button> */}
 
           <DownloadPopover stateManager={stateManager} />
         </div>
@@ -184,6 +162,16 @@ const DownloadPopover = ({ stateManager }: { stateManager: StateManager }) => {
       id: generateId(),
       ...stateManager.toJSON()
     };
+
+    // Check if any track has items
+    const hasContent = data.tracks?.some(track => 
+      track.items && track.items.length > 0
+    );
+
+    if (!hasContent) {
+      toast.error('Tambahkan video ke timeline sebelum export');
+      return;
+    }
 
     console.log({ data });
 

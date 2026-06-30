@@ -22,13 +22,22 @@ export async function processFileUpload(
   callbacks: UploadCallbacks
 ): Promise<any> {
   try {
+    // Get user's upload config
+    let userId = "PJ1nkaufw0hZPyhN7bWCP"; // fallback
+    try {
+      const configRes = await axios.get("/api/editor/my-uploads");
+      if (configRes.data?.upload_dir_id) {
+        userId = configRes.data.upload_dir_id;
+      }
+    } catch {}
+
     // Get presigned URL
     const {
       data: { uploads }
     } = await axios.post(
       "/api/uploads/presign",
       {
-        userId: "PJ1nkaufw0hZPyhN7bWCP",
+        userId,
         fileNames: [file.name]
       },
       {
@@ -79,6 +88,15 @@ export async function processUrlUpload(
   callbacks: UploadCallbacks
 ): Promise<any[]> {
   try {
+    // Get user's upload config
+    let userId = "PJ1nkaufw0hZPyhN7bWCP"; // fallback
+    try {
+      const configRes = await axios.get("/api/editor/my-uploads");
+      if (configRes.data?.upload_dir_id) {
+        userId = configRes.data.upload_dir_id;
+      }
+    } catch {}
+
     // Start with 10% progress
     callbacks.onProgress(uploadId, 10);
 
@@ -86,7 +104,7 @@ export async function processUrlUpload(
     const { data: { uploads = [] } = {} } = await axios.post(
       "/api/uploads/url",
       {
-        userId: "PJ1nkaufw0hZPyhN7bWCP",
+        userId,
         urls: [url]
       },
       {

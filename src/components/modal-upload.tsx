@@ -1,4 +1,4 @@
-import React, { use, useEffect, useRef, useState } from "react";
+import React, { use, useLayoutEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -208,13 +208,27 @@ const ModalUpload: React.FC<ModalUploadProps> = ({ type = "all" }) => {
         return "audio/*,image/*,video/*";
     }
   };
-  useEffect(() => {
+  useLayoutEffect(() => {
     setFiles([]);
   }, [showUploadModal]);
 
+  // Send postMessage when modal opens/closes
+  useLayoutEffect(() => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({type: 'modalOverlay', open: showUploadModal}, '*');
+    }
+  }, [showUploadModal]);
+
+  const handleModalOpenChange = (open: boolean) => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({type: 'modalOverlay', open}, '*');
+    }
+    setShowUploadModal(open);
+  };
+
   return (
     <div>
-      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+      <Dialog open={showUploadModal} onOpenChange={handleModalOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-md">Upload media</DialogTitle>

@@ -125,6 +125,19 @@ const Editor = ({ tempId, id }: { tempId?: string; id?: string }) => {
     timelinePanelRef.current?.resize(percentage);
   }, []);
 
+  // Listen for postMessage from parent (Flask wrapper tools drawer)
+  const { setActiveMenuItem, setShowMenuItem } = useLayoutStore();
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'activate-tool' && e.data?.tool) {
+        setShowMenuItem(true);
+        setActiveMenuItem(e.data.tool);
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
   const handleTimelineResize = () => {
     const timelineContainer = document.getElementById("timeline-container");
     if (!timelineContainer) return;

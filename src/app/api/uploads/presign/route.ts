@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 interface PresignRequest {
   userId: string;
   fileNames: string[];
-}
-
-interface ExternalPresignResponse {
-  fileName: string;
-  filePath: string;
-  contentType: string;
-  presignedUrl: string;
-  folder?: string;
-  url: string;
-}
-
-interface ExternalPresignsResponse {
-  uploads: ExternalPresignResponse[];
 }
 
 export async function POST(request: NextRequest) {
@@ -37,48 +26,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call external presigned URL service
-    const externalResponse = await fetch(
-      "https://upload-file-j43uyuaeza-uc.a.run.app/presigned",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          userId,
-          fileNames
-        })
-      }
-    );
+    const uploadDir = path.join("/var/www/clip/uploads", userId);
+    await mkdir(uploadDir, { recursive: true });
 
-    if (!externalResponse.ok) {
-      const errorData = await externalResponse.json();
-      return NextResponse.json(
-        {
-          error: "External presigned URL service failed",
-          details: errorData
-        },
-        { status: externalResponse.status }
-      );
-    }
+    const uploads = fileNames.map((fileName) => {
+      const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const filePath = `/uploads/${userId}/${safeName}`;
 
-    const externalData: ExternalPresignsResponse =
-      await externalResponse.json();
-    const { uploads = [] } = externalData;
+      return {
+        fileName: safeName,
+        filePath: filePath,
+        contentType: getContentType(fileName),
+        presignedUrl: `/api/uploads/local/${userId}/${safeName}`,
+        folder: null,
+        url: filePath,
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      uploads: uploads
+      uploads: uploads,
     });
   } catch (error) {
     console.error("Error in presign route:", error);
     return NextResponse.json(
       {
         error: "Internal server error",
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );
   }
+}
+
+function getContentType(fileName: string): string {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  const types: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+    mp4: "video/mp4",
+    webm: "video/webm",
+    mov: "video/quicktime",
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    m4a: "audio/mp4",
+  };
+  return types[ext || ""] || "application/octet-stream";
 }

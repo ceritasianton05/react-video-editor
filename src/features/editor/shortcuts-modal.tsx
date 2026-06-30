@@ -9,6 +9,7 @@ import {
 import { Kbd } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { useLayoutEffect } from "react";
 
 interface ShortcutsModalProps {
   open: boolean;
@@ -88,8 +89,22 @@ const SHORTCUTS: ShortcutCategory[] = [
 ];
 
 export function ShortcutsModal({ open, onOpenChange }: ShortcutsModalProps) {
+  // Send postMessage when open changes externally (button click)
+  useLayoutEffect(() => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({type: 'modalOverlay', open}, '*');
+    }
+  }, [open]);
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({type: 'modalOverlay', open: newOpen}, '*');
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="md:max-w-5xl w-full max-w-5xl border bg-card p-6 py-8 overflow-hidden">
         <DialogHeader className="px-6">
           <DialogTitle className="text-lg font-semibold">Shortcuts</DialogTitle>

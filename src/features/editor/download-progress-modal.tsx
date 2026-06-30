@@ -1,12 +1,12 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useDownloadState } from "./store/use-download-state";
 import { Button } from "@/components/ui/button";
-import { CircleCheckIcon, XIcon } from "lucide-react";
+import { CircleCheckIcon, XCircleIcon } from "lucide-react";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { download } from "@/utils/download";
 
 const DownloadProgressModal = () => {
-  const { progress, displayProgressModal, output, actions } =
+  const { progress, displayProgressModal, output, error, actions } =
     useDownloadState();
   const isCompleted = progress === 100;
 
@@ -19,15 +19,14 @@ const DownloadProgressModal = () => {
   return (
     <Dialog
       open={displayProgressModal}
-      onOpenChange={actions.setDisplayProgressModal}
+      onOpenChange={(open) => {
+        if (!open) actions.setError(null);
+        actions.setDisplayProgressModal(open);
+      }}
     >
       <DialogContent className="flex h-[627px] flex-col gap-0 bg-background p-0 sm:max-w-[844px]">
         <DialogTitle className="hidden" />
         <DialogDescription className="hidden" />
-        <XIcon
-          onClick={() => actions.setDisplayProgressModal(false)}
-          className="absolute right-4 top-5 h-5 w-5 text-zinc-400 hover:cursor-pointer hover:text-zinc-500"
-        />
         <div className="flex h-16 items-center border-b px-4 font-medium">
           Download
         </div>
@@ -44,6 +43,15 @@ const DownloadProgressModal = () => {
             </div>
             <Button onClick={handleDownload}>Download</Button>
           </div>
+        ) : error ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+            <XCircleIcon className="h-12 w-12 text-red-500" />
+            <div className="font-bold text-red-500">Export Failed</div>
+            <div className="text-center text-zinc-500 text-sm px-8">
+              {error}
+            </div>
+            <Button variant={"outline"} onClick={() => actions.setDisplayProgressModal(false)}>Close</Button>
+          </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-4">
             <div className="text-5xl font-semibold">
@@ -54,7 +62,7 @@ const DownloadProgressModal = () => {
               <div>Closing the browser will not cancel the export.</div>
               <div>The video will be saved in your space.</div>
             </div>
-            <Button variant={"outline"}>Cancel</Button>
+            <Button variant={"outline"} onClick={() => { actions.setError(null); actions.setDisplayProgressModal(false); }}>Cancel</Button>
           </div>
         )}
       </DialogContent>

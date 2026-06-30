@@ -32,28 +32,10 @@ const MENU_ITEMS = [
     ariaLabel: "Add and edit text elements"
   },
   {
-    id: "videos",
-    icon: Icons.video,
-    label: "Videos",
-    ariaLabel: "Add and manage video content"
-  },
-  {
     id: "captions",
     icon: Icons.captions,
     label: "Captions",
     ariaLabel: "Add and edit captions"
-  },
-  {
-    id: "images",
-    icon: Icons.image,
-    label: "Images",
-    ariaLabel: "Add and manage images"
-  },
-  {
-    id: "audios",
-    icon: Icons.audio,
-    label: "Audio",
-    ariaLabel: "Add and manage audio content"
   },
   {
     id: "transitions",
@@ -66,12 +48,6 @@ const MENU_ITEMS = [
     icon: Icons.volume,
     label: "AI Voice",
     ariaLabel: "Generate AI voice from text"
-  },
-  {
-    id: "sfx",
-    icon: Icons.sfx,
-    label: "SFX",
-    ariaLabel: "Generate SFX from text"
   }
 ] as const;
 
@@ -93,8 +69,8 @@ const MenuButton = memo<{
       className={cn(
         "flex items-center justify-center flex-none h-7.5 w-7.5 cursor-pointer rounded-sm transition-all duration-200",
         isActive
-          ? "bg-white/10 text-white"
-          : "text-muted-foreground hover:bg-white/5 hover:text-white"
+          ? "bg-blue-100 text-blue-600"
+          : "text-muted-foreground hover:bg-blue-50/80 hover:text-blue-600"
       )}
       key={item.id}
     >
@@ -183,7 +159,8 @@ function MenuList() {
           ref={scrollRef}
           className="overflow-x-auto scrollbar-hidden! w-full"
         >
-          <div className="flex items-center gap-2 w-fit mx-auto px-4">
+          <div className="flex items-center gap-2 w-fit ml-0 px-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mr-2 select-none">Tools</span>
             {MENU_ITEMS.map((item) => {
               const isActive =
                 (drawerOpen && activeMenuItem === item.id) ||
